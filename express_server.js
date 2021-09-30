@@ -23,7 +23,7 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
-// MIDDLEWARE BODY PARSER
+// MIDDLEWARE
 
 app.use(bodyParser.urlencoded({extended: true}));
 
