@@ -2,6 +2,7 @@
 
 const express = require("express");
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
 
 // SIMPLIFIED VARIABLES FOR EASE OF USE
 
@@ -19,13 +20,14 @@ const generateRandomString = () => Math.random().toString(36).substr(2, 6);
 // COLLECTION OF ALL URLS
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  "b2xVn2": "https://www.lighthouselabs.ca",
+  "9sm5xK": "https://www.google.com",
 };
 
 // MIDDLEWARE
 
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
 
 // GET REQUESTS
 
@@ -96,6 +98,13 @@ app.post("/urls/:shortURL/edit", (req, res) => {
     longURL = `https://${longURL}`;
   }
   urlDatabase[req.params.shortURL] = longURL;
+  res.redirect("/urls");
+});
+
+/* Login */
+
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
   res.redirect("/urls");
 });
 
