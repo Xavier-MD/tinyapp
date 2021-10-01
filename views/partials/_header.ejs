@@ -11,10 +11,19 @@
       </div>
     </div>
     <div>
-      <form method="POST" action="/login">
-        <input type="text" name="username" placeholder="Username">
-        <button type="submit" class="btn btn-default" style="color: white; border-color: white;">Submit</button>
-      </form>
+      <% if (!username) { %>
+        <form class="form-inline" method="POST" action="/login">
+          <div class="form-group mb-2">
+            <input class="form-control" type="text" name="username" placeholder="Username" style="margin-right: 0.5em; margin-bottom: -0.5em;">
+            <button type="submit" class="btn btn-default" style="color: white; border-color: white; margin-right: -0.5em; margin-bottom: -0.5em;">Login</button>
+          </div>
+        </form>
+      <% } else if (username) { %>
+        <form class="form-inline" method="POST" action="/logout">
+          <p style="color: white; margin-right: 0.5em; margin-bottom: -0.001em;"><%= `Welcome ${username}!` %></p>
+          <button type="submit" class="box btn btn-default" style="color: white; border-color: white; margin-right: -0.50em;">Logout</button>
+        </form>
+      <% } %>
     </div>
   </nav>
 </header>
