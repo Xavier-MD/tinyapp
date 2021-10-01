@@ -16,10 +16,12 @@
       </div>
     <div class="card-footer">
       <form method="POST" action="/urls/<%= shortURL%>/edit">
-        <h4 class="card-title" style="color: gray;">Edit</h4>
-        <label for="newURL" style="color: gray;">NewURL:</label>
-        <input id="newURL" type="text" name="longURL" placeholder="http://">
-        <button type="submit" class="btn btn-default" style="color: white; background-color: dodgerblue;">Submit</button>
+        <h3 class="card-title" style="color: gray;">Edit</h3>
+        <div class="d-flex justify-content-center form-inline">
+          <label for="newURL" style="color: gray;">NewURL:</label>
+          <input class="form-control" id="newURL" type="text" name="longURL" placeholder="https://" style="width: 250px; margin: 0.5em">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
       </form>
     </div>
   </div>

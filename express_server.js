@@ -37,6 +37,16 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+/* User Registration Page */
+
+app.get("/register", (req, res) => {
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
+  res.render("user_registration", templateVars);
+});
+
 /* Complete URL List Page */
 
 app.get("/urls", (req, res) => {
