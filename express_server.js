@@ -1,35 +1,73 @@
-// REQUIRED LIBRARIES
+// REQUIRED LIBRARIES ------------------------------------------------
 
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
-// SIMPLIFIED VARIABLES FOR EASE OF USE
+// SIMPLIFIED VARIABLES FOR EASE OF USE ------------------------------
 
 const app = express();
 const PORT = 8080;
 
-// ENABLING EJS AS THE VIEW ENGINE
+// ENABLING EJS AS THE VIEW ENGINE -----------------------------------
 
 app.set("view engine", "ejs");
 
-// FUNCTION THAT CREATES UNIQUE 6 CHARACTER IDENTIFIERS
+// DATABASES ---------------------------------------------------------
 
-const generateRandomString = () => Math.random().toString(36).substr(2, 6);
-
-// COLLECTION OF ALL URLS
+/* Collection Of URLS */
 
 const urlDatabase = {
   "b2xVn2": "https://www.lighthouselabs.ca",
   "9sm5xK": "https://www.google.com",
 };
 
-// MIDDLEWARE
+/* Collection Of Users */
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
+
+// MIDDLEWARE --------------------------------------------------------
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
-// GET REQUESTS
+// FUNCTIONS ---------------------------------------------------------
+
+/* Random String Generator */
+
+const generateRandomString = () => Math.random().toString(36).substr(2, 6);
+
+/* Valid E-mail/Password Checker */
+
+const inputChecker = function(email, password) {
+  if (!email || !password) {
+    return false;
+  }
+};
+
+/* Existing E-mail Checker */
+
+const emailChecker = function(email, database) {
+  for (let user in database) {
+    const userId = database[user];
+    if (email === userId.email) {
+      return false;
+    }
+  }
+};
+
+// GET REQUESTS ------------------------------------------------------
 
 /* Home Page */
 
@@ -42,7 +80,7 @@ app.get("/", (req, res) => {
 app.get("/register", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"]
+    user: req.cookies["user_id"]
   };
   res.render("user_registration", templateVars);
 });
@@ -52,7 +90,7 @@ app.get("/register", (req, res) => {
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"]
+    user: req.cookies["user_id"]
   };
   res.render("urls_index", templateVars);
 });
@@ -61,7 +99,7 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    username: req.cookies["username"]
+    user: req.cookies["user_id"]
   };
   res.render("urls_new", templateVars);
 });
@@ -72,7 +110,7 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies["username"]
+    user: req.cookies["user_id"]
   };
   res.render("urls_show", templateVars);
 });
@@ -89,18 +127,60 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-// POST REQUESTS
+/* JSON Representation Of All Existing users */
+
+app.get("/users.json", (req, res) => {
+  res.json(users);
+});
+
+
+// POST REQUESTS -----------------------------------------------------
+
+/* Register New User */
+
+app.post("/register", (req, res) => {
+  const id = 'user_' + generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+  if (inputChecker(email, password) === false) {
+    return res.status(400).send("Error: Cannot leave the email or password fields empty.");
+  }
+  if (emailChecker(email, users) === false) {
+    return res.status(400).send("Error: A user with this e-mail already exists.");
+  }
+  users[id] = {
+    "id": id,
+    "email": email,
+    "password": password
+  };
+  res.cookie('user_id', users[id]);
+  res.redirect("/urls");
+});
+
+/* Login */
+
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect("/urls");
+});
+
+/* Logout */
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls");
+});
 
 /* Create New URL */
 
 app.post("/urls", (req, res) => {
-  const updatedURL = generateRandomString();
+  const newURL = generateRandomString();
   let longURL = req.body.longURL;
   if (!(longURL.includes('http'))) {
     longURL = `https://${longURL}`;
   }
-  urlDatabase[updatedURL] = longURL;
-  res.redirect(`/urls/${updatedURL}`);
+  urlDatabase[newURL] = longURL;
+  res.redirect(`/urls/${newURL}`);
 });
 
 /* Delete Existing URL */
@@ -121,21 +201,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   res.redirect("/urls");
 });
 
-/* Login */
-
-app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect("/urls");
-});
-
-/* Logout */
-
-app.post("/logout", (req, res) => {
-  res.clearCookie("username");
-  res.redirect("/urls");
-});
-
-// LISTEN METHOD
+// LISTEN METHOD ----------------------------------------------------
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

@@ -16,7 +16,7 @@
 
     <main class="" style="margin: 1em;">
       <h3>Register New User</h3>
-      <form method=POST action="/register" oninput='password.setCustomValidity(passwordConfirmation.value !== password.value ? "Passwords do not match." : "")'>
+      <form method=POST action="/register">
         <div class="form-group">
           <label for="userID">Email Address:</label>
           <input class="form-control" id="userID" type=email required name=email placeholder="example@outlook.com">
@@ -24,10 +24,6 @@
         <div class="form-group">
           <label for="pass1">Password:</label>
           <input class="form-control" id="pass1" type=password required name=password placeholder="password">
-        </div>
-        <div class="form-group">
-          <label for="pass2">Confirm Password:</label>
-          <input class="form-control" id="pass2" type=password required name=passwordConfirmation placeholder="password">
         </div>
         <button type="submit" class="btn btn-primary">Register</button>
       </form>
