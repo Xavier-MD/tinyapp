@@ -4,25 +4,31 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
-// SIMPLIFIED VARIABLES FOR EASE OF USE ------------------------------
+// VARIABLES ---------------------------------------------------------
 
 const app = express();
 const PORT = 8080;
 
-// ENABLING EJS AS THE VIEW ENGINE -----------------------------------
+// SET EJS AS VIEW ENGINE -----------------------------------------
 
 app.set("view engine", "ejs");
 
 // DATABASES ---------------------------------------------------------
 
-/* Collection Of URLS */
+/* URL Database */
 
 const urlDatabase = {
-  "b2xVn2": "https://www.lighthouselabs.ca",
-  "9sm5xK": "https://www.google.com",
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "userRandomID"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "user2RandomID"
+  }
 };
 
-/* Collection Of Users */
+/* User Database */
 
 const users = {
   "userRandomID": {
@@ -44,56 +50,75 @@ app.use(cookieParser());
 
 // FUNCTIONS ---------------------------------------------------------
 
-/* Random String Generator */
+/* Generate Random String */
 
 const generateRandomString = () => Math.random().toString(36).substr(2, 6);
 
-/* Valid E-mail/Password Checker */
+/* Registration Form Input Checker */
 
 const inputChecker = function(email, password) {
   if (!email || !password) {
     return false;
   }
+  return true;
 };
 
-/* Existing E-mail Checker */
+/* Find User By Email */
 
-const emailChecker = function(email, database) {
-  for (let user in database) {
-    const userId = database[user];
-    if (email === userId.email) {
-      return userId;
+const findUserByEmail = function(email) {
+  for (let user in users) {
+    const userObject = users[user];
+    if (email === userObject.email) {
+      return userObject;
     }
   }
   return false;
 };
 
-/* Account authenticator */
+/* Authenticate Password */
 
-const accountAuthenticator = (email, password, database) => {
-  const user = emailChecker(email, database);
-  if (user) {
-    if (user.password === password) {
-      return user;
+const authenticatePassword = (email, password) => {
+  const userObject = findUserByEmail(email);
+  if (userObject) {
+    if (userObject.password === password) {
+      return userObject;
     }
-    return undefined;
+    return false;
   }
   return null;
 };
 
+/* Find User's URLs */
+
+const urlsForUser = function(id) {
+  const userUrls = {};
+  for (let url in urlDatabase) {
+    const shortURL = urlDatabase[url];
+    if (shortURL.userID === id) {
+      userUrls[url] = shortURL;
+    }
+  }
+  return userUrls;
+};
+
 // GET REQUESTS ------------------------------------------------------
 
-/* Home Page */
+/* Hello Page */
 
 app.get("/", (req, res) => {
   res.send("Hello!");
+});
+
+/* Hello World Page */
+
+app.get("/hello", (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 /* User Registration Page */
 
 app.get("/register", (req, res) => {
   const templateVars = {
-    urls: urlDatabase,
     user: req.cookies["user_id"]
   };
   res.render("user_registration", templateVars);
@@ -103,55 +128,76 @@ app.get("/register", (req, res) => {
 
 app.get("/login", (req, res) => {
   const templateVars = {
-    urls: urlDatabase,
     user: req.cookies["user_id"]
   };
   res.render("user_login", templateVars);
 });
 
-/* Complete URL List Page */
+/* User URL List Page */
 
 app.get("/urls", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase,
-    user: req.cookies["user_id"]
-  };
-  res.render("urls_index", templateVars);
+  const currentUser = req.cookies["user_id"];
+  if (currentUser) {
+    const templateVars = {
+      urls: urlsForUser(currentUser.id),
+      user: currentUser
+    };
+    res.render("urls_index", templateVars);
+  } else {
+    res.status(403).send("<html><body>Error: Users must register or login before accessing URLs. Please visit http://localhost:8080/register or http://localhost:8080/login.</body></html>\n");
+  }
 });
 
-/* URL Creation Page */
+/* User URL Creation Page */
 
 app.get("/urls/new", (req, res) => {
+  const currentUser = req.cookies["user_id"];
   const templateVars = {
-    user: req.cookies["user_id"]
+    user: currentUser
   };
-  res.render("urls_new", templateVars);
+  if (req.cookies["user_id"]) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.render("user_registration", templateVars);
+  }
 });
 
-/* Single URL Page */
+/* User Single URL Page */
 
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    user: req.cookies["user_id"]
-  };
-  res.render("urls_show", templateVars);
+  const currentUser = req.cookies["user_id"];
+  if (currentUser) {
+    const shortURL = req.params.shortURL;
+    const longURL = urlsForUser(currentUser.id)[shortURL].longURL;
+    const templateVars = {
+      'shortURL': shortURL,
+      longURL: longURL,
+      user: currentUser
+    };
+    res.render("urls_show", templateVars);
+  } else {
+    res.status(403).send("<html><body>Error: Users must register or login before accessing URLs. Please visit http://localhost:8080/register or http://localhost:8080/login.</body></html>\n");
+  }
 });
 
-/* Redirect To External Site Using Shortened URL */
+/* Redirect To External Site */
 
 app.get("/u/:shortURL", (req, res) => {
-  res.redirect(urlDatabase[req.params.shortURL]);
+  const shortURL = urlDatabase[req.params.shortURL];
+  if (shortURL) {
+    res.redirect(shortURL.longURL);
+  } else {
+    res.status(404).send("<html><body>Error: The page you are trying to reach does not exist.</body></html>\n");
+  }
 });
 
-/* JSON Representation Of All Existing URLs */
+/* View URL Database */
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-/* JSON Representation Of All Existing users */
+/* View User Database */
 
 app.get("/users.json", (req, res) => {
   res.json(users);
@@ -166,10 +212,10 @@ app.post("/register", (req, res) => {
   const id = "user_" + generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  if (inputChecker(email, password) === false) {
-    res.status(400).send("Error: Cannot leave the e-mail or password fields empty.");
-  } else if (emailChecker(email, users)) {
-    res.status(400).send("Error: A user with this e-mail already exists.");
+  if (!inputChecker(email, password)) {
+    res.status(400).send("<html><body>Error: Cannot leave the e-mail or password fields empty.</body></html>\n");
+  } else if (findUserByEmail(email)) {
+    res.status(400).send("<html><body>Error: A user with this e-mail already exists.</body></html>\n");
   } else {
     users[id] = {
       "id": id,
@@ -186,14 +232,14 @@ app.post("/register", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const user = accountAuthenticator(email, password, users);
-  if (user) {
-    res.cookie("user_id", user);
+  const currentUser = authenticatePassword(email, password);
+  if (currentUser) {
+    res.cookie("user_id", currentUser);
     res.redirect("/urls");
-  } else if (user === null) {
-    res.status(403).send("Error: Incorrect e-mail.");
-  } else if (user === undefined) {
-    res.status(403).send("Error: Incorrect password.");
+  } else if (currentUser === null) {
+    res.status(403).send("<html><body>Error: Incorrect email.</body></html>\n");
+  } else if (currentUser === false) {
+    res.status(403).send("<html><body>Error: Incorrect password.</body></html>\n");
   }
 });
 
@@ -207,31 +253,60 @@ app.post("/logout", (req, res) => {
 /* Create New URL */
 
 app.post("/urls", (req, res) => {
-  const newURL = generateRandomString();
-  let longURL = req.body.longURL;
-  if (!(longURL.includes('http'))) {
-    longURL = `https://${longURL}`;
+  const currentUser = req.cookies["user_id"];
+  if (currentUser) {
+    const newURL = generateRandomString();
+    let longURL = req.body.longURL;
+    if (!(longURL.includes('http'))) {
+      longURL = `https://${longURL}`;
+    }
+    urlDatabase[newURL] = {
+      'longURL': longURL,
+      'userID': currentUser.id
+    };
+    res.redirect(`/urls/${newURL}`);
+  } else {
+    res.status(403).send("<html><body>Error: User must be logged in to create a new URL.</body></html>\n");
+    
   }
-  urlDatabase[newURL] = longURL;
-  res.redirect(`/urls/${newURL}`);
 });
 
 /* Delete Existing URL */
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect("/urls");
+  const currentUser = req.cookies["user_id"];
+  const shortURL = urlDatabase[req.params.shortURL];
+  if (!shortURL) {
+    res.status(404).send("<html><body>Error: The page you are trying to reach does not exist.</body></html>\n");
+  } else if (currentUser && currentUser.id === shortURL.userID) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("<html><body>Error: Error: Users can only delete URLs that they have created.</body></html>\n");
+  }
 });
 
 /* Edit Existing URL */
 
 app.post("/urls/:shortURL/edit", (req, res) => {
-  let longURL = req.body.longURL;
-  if (!(longURL.includes('http'))) {
-    longURL = `https://${longURL}`;
+  const currentUser = req.cookies["user_id"];
+  const shortURL = urlDatabase[req.params.shortURL];
+  if (!shortURL) {
+    res.status(404).send("<html><body>Error: The page you are trying to reach does not exist.</body></html>\n");
   }
-  urlDatabase[req.params.shortURL] = longURL;
-  res.redirect("/urls");
+  if (currentUser && currentUser.id === shortURL.userID) {
+    let longURL = req.body.longURL;
+    if (!(longURL.includes('http'))) {
+      longURL = `https://${longURL}`;
+    }
+    urlDatabase[req.params.shortURL] = {
+      'longURL': longURL,
+      'userID': currentUser.id
+    };
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("<html><body>Error: Error: Users can only edit URLs that they have created.</body></html>\n");
+  }
 });
 
 // LISTEN METHOD ----------------------------------------------------

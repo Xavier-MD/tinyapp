@@ -18,7 +18,7 @@
             <a class="nav-item nav-link" href="/login">Login</a>
           </div>
         </div>
-      <% } else if (user) { %>
+      <% } else { %>
         <form class="form-inline" method="POST" action="/logout">
           <p style="color: white; margin-right: 0.5em; margin-bottom: -0.001em;"><%= `Welcome ${user.email}!` %></p>
           <button type="submit" class="box btn btn-default" style="color: white; border-color: white; margin-right: -0.50em;">Logout</button>
