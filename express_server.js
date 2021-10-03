@@ -62,9 +62,23 @@ const emailChecker = function(email, database) {
   for (let user in database) {
     const userId = database[user];
     if (email === userId.email) {
-      return false;
+      return userId;
     }
   }
+  return false;
+};
+
+/* Account authenticator */
+
+const accountAuthenticator = (email, password, database) => {
+  const user = emailChecker(email, database);
+  if (user) {
+    if (user.password === password) {
+      return user;
+    }
+    return undefined;
+  }
+  return null;
 };
 
 // GET REQUESTS ------------------------------------------------------
@@ -83,6 +97,16 @@ app.get("/register", (req, res) => {
     user: req.cookies["user_id"]
   };
   res.render("user_registration", templateVars);
+});
+
+/* User Login Page */
+
+app.get("/login", (req, res) => {
+  const templateVars = {
+    urls: urlDatabase,
+    user: req.cookies["user_id"]
+  };
+  res.render("user_login", templateVars);
 });
 
 /* Complete URL List Page */
@@ -139,35 +163,44 @@ app.get("/users.json", (req, res) => {
 /* Register New User */
 
 app.post("/register", (req, res) => {
-  const id = 'user_' + generateRandomString();
+  const id = "user_" + generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
   if (inputChecker(email, password) === false) {
-    return res.status(400).send("Error: Cannot leave the email or password fields empty.");
+    res.status(400).send("Error: Cannot leave the e-mail or password fields empty.");
+  } else if (emailChecker(email, users)) {
+    res.status(400).send("Error: A user with this e-mail already exists.");
+  } else {
+    users[id] = {
+      "id": id,
+      "email": email,
+      "password": password
+    };
+    res.cookie("user_id", users[id]);
+    res.redirect("/urls");
   }
-  if (emailChecker(email, users) === false) {
-    return res.status(400).send("Error: A user with this e-mail already exists.");
-  }
-  users[id] = {
-    "id": id,
-    "email": email,
-    "password": password
-  };
-  res.cookie('user_id', users[id]);
-  res.redirect("/urls");
 });
 
 /* Login */
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect("/urls");
+  const email = req.body.email;
+  const password = req.body.password;
+  const user = accountAuthenticator(email, password, users);
+  if (user) {
+    res.cookie("user_id", user);
+    res.redirect("/urls");
+  } else if (user === null) {
+    res.status(403).send("Error: Incorrect e-mail.");
+  } else if (user === undefined) {
+    res.status(403).send("Error: Incorrect password.");
+  }
 });
 
 /* Logout */
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
