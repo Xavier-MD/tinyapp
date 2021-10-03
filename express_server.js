@@ -3,6 +3,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
 
 // VARIABLES ---------------------------------------------------------
 
@@ -80,7 +81,7 @@ const findUserByEmail = function(email) {
 const authenticatePassword = (email, password) => {
   const userObject = findUserByEmail(email);
   if (userObject) {
-    if (userObject.password === password) {
+    if (bcrypt.compareSync(password, userObject.password)) {
       return userObject;
     }
     return false;
@@ -212,6 +213,7 @@ app.post("/register", (req, res) => {
   const id = "user_" + generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (!inputChecker(email, password)) {
     res.status(400).send("<html><body>Error: Cannot leave the e-mail or password fields empty.</body></html>\n");
   } else if (findUserByEmail(email)) {
@@ -220,7 +222,7 @@ app.post("/register", (req, res) => {
     users[id] = {
       "id": id,
       "email": email,
-      "password": password
+      "password": hashedPassword
     };
     res.cookie("user_id", users[id]);
     res.redirect("/urls");
