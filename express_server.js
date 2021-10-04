@@ -53,12 +53,17 @@ const users = {
   }
 };
 
-// GET REQUESTS ------------------------------------------------------
+// GET REQUEST HANDLERS ----------------------------------------------
 
 /* Hello Page */
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  const currentUser = req.session.user_id;
+  if (currentUser) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
 });
 
 /* Hello World Page */
@@ -112,7 +117,7 @@ app.get("/urls/new", (req, res) => {
     };
     res.render("urls_new", templateVars);
   } else {
-    res.redirect("/register");
+    res.redirect("/login");
   }
 });
 
@@ -120,15 +125,23 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   const currentUser = req.session.user_id;
+  const shortURL = req.params.shortURL;
   if (currentUser) {
-    const shortURL = req.params.shortURL;
-    const longURL = urlDatabase[shortURL].longURL;
-    const templateVars = {
-      shortURL,
-      longURL,
-      user: currentUser
-    };
-    res.render("urls_show", templateVars);
+    if (currentUser.id === urlDatabase[shortURL].userID) {
+      if (urlDatabase[shortURL]) {
+        const longURL = urlDatabase[shortURL].longURL;
+        const templateVars = {
+          shortURL,
+          longURL,
+          user: currentUser
+        };
+        res.render("urls_show", templateVars);
+      } else {
+        res.status(404).send("<html><body>Error: The page you are trying to reach does not exist.</body></html>\n");
+      }
+    } else {
+      res.status(403).send("<html><body>Error: Users can only edit URLs that they have created.</body></html>\n");
+    }
   } else {
     res.status(403).send("<html><body>Error: Users must register or login before accessing URLs. Please visit http://localhost:8080/register or http://localhost:8080/login.</body></html>\n");
   }
@@ -158,7 +171,7 @@ app.get("/users.json", (req, res) => {
 });
 
 
-// POST REQUESTS -----------------------------------------------------
+// POST REQUEST HANDLERS --------------------------------------------
 
 /* Register New User */
 
