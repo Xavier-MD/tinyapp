@@ -11,18 +11,18 @@
       </div>
     </div>
     <div>
-      <% if (!user) { %>
+      <% if (user) { %>
+        <form class="form-inline" method="POST" action="/logout">
+          <p style="color: white; margin-right: 0.5em; margin-bottom: -0.001em;"><%= `Welcome ${user.email}!` %></p>
+          <button type="submit" class="box btn btn-default" style="color: white; border-color: white; margin-right: -0.50em;">Logout</button>
+        </form>
+      <% } else { %>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
           <div class="navbar-nav">
             <a class="nav-item nav-link" href="/register">Register</a>
             <a class="nav-item nav-link" href="/login">Login</a>
           </div>
         </div>
-      <% } else { %>
-        <form class="form-inline" method="POST" action="/logout">
-          <p style="color: white; margin-right: 0.5em; margin-bottom: -0.001em;"><%= `Welcome ${user.email}!` %></p>
-          <button type="submit" class="box btn btn-default" style="color: white; border-color: white; margin-right: -0.50em;">Logout</button>
-        </form>
       <% } %>
     </div>
   </nav>
